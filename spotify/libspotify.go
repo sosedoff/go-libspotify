@@ -1762,6 +1762,8 @@ type Track struct {
 	session  *Session
 	sp_track *C.sp_track
 	wg       sync.WaitGroup
+	once     sync.Once
+	onceBody func()
 }
 
 func newTrack(s *Session, t *C.sp_track) *Track {
@@ -1771,6 +1773,10 @@ func newTrack(s *Session, t *C.sp_track) *Track {
 
 	if s.listenForMetadataUpdates(track.isLoaded, track) {
 		track.wg.Add(1)
+		track.onceBody = func() {
+			println("\tOnce done: " + track.Name())
+			track.wg.Done()
+		}
 	}
 	return track
 }
@@ -1785,7 +1791,9 @@ func (t *Track) release() {
 
 func (t *Track) cbUpdated() {
 	if t.isLoaded() {
-		t.wg.Done()
+		// t.wg.Done()
+		println("Done: " + t.Name())
+		t.once.Do(t.onceBody)
 	}
 }
 
